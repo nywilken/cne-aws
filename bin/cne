@@ -6,10 +6,17 @@ cne = Cne.new
 
 case ARGV[0]
   when 'instances'
-    if ARGV[1].empty? || ARGV[2].empty?
+    if ARGV[1].nil? || ARGV[2].nil?
       puts "Usage: cne instances [appname] [environment]".colorize(:red)
       exit 1
     else
       cne.list_instances(ARGV[1], ARGV[2])
+    end
+
+  when 'security'
+    if ARGV[1].nil?
+      cne.list_security_groups('')
+    else
+      cne.list_security_groups(ARGV[1])
     end
 end
