@@ -9,6 +9,11 @@ class Cne
       access_key_id: ENV['AWS_ACCESS_KEY_ID'],
       secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
     )
+    @elb_client = Aws::ElasticLoadBalancing::Client.new(
+      region: ENV['AWS_REGION'],
+      access_key_id: ENV['AWS_ACCESS_KEY_ID'],
+      secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
+    )
   end
 
   def list_instances(appname, env)
@@ -34,7 +39,7 @@ class Cne
       exit 1
     end
 
-    puts "Displaying #{appname} (#{env}) instances".colorize(:red)
+    puts "Displaying #{appname} (#{env}) instances:".colorize(:red)
 
     response.reservations.each do |reserve|
       reserve.instances.each do |instance|
@@ -113,6 +118,59 @@ class Cne
       )
 
       puts table
+    end
+  end
+
+  def get_instance_info(instance_id)
+    response = @ec2_client.describe_instances(
+      instance_ids: [instance_id]
+    )
+
+    return response.reservations
+  end
+
+  def get_elb_names
+    response = @elb_client.describe_load_balancers
+
+    return response.load_balancer_descriptions
+  end
+
+  def list_unhealthy_hosts
+    unhealthy = []
+
+    get_elb_names.each do |elb|
+      response = @elb_client.describe_instance_health(
+        load_balancer_name: elb.load_balancer_name
+      )
+
+      response.instance_states.each do |instance|
+        if instance.state.include?('OutOfService')
+          puts elb.load_balancer_name.colorize(:red)
+
+          get_instance_info(instance.instance_id).each do |info|
+            unhealthy << [
+              "#{info.instances.first.instance_id}".colorize(:red),
+              "#{info.instances.first.private_ip_address}".colorize(:red),
+              "#{instance.state}".colorize(:red)
+            ]
+          end
+
+          table = Terminal::Table.new(
+            :headings => [
+              'Instance ID'.colorize(:blue),
+              'IP'.colorize(:blue),
+              'Instance State'.colorize(:blue)
+            ],
+            :rows => unhealthy
+          )
+          puts table
+          puts ''
+        end
+      end
+    end
+
+    if unhealthy.empty?
+      puts 'All systems go! All ELBs are healthy!'.colorize(:green)
     end
   end
 end

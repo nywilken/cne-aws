@@ -19,4 +19,6 @@ case ARGV[0]
     else
       cne.list_security_groups(ARGV[1])
     end
+  when 'unhealthy'
+    cne.list_unhealthy_hosts
 end

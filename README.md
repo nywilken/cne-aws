@@ -25,3 +25,6 @@ To build and install:
 
 #### Lists security groups based on search param regex
 `cne security [search param]`
+
+#### Lists unhealthy instances
+`cne unhealthy`
