@@ -1,8 +1,13 @@
-#!/usr/bin/env ruby_executable_hooks
+#!/usr/bin/env ruby
 
 require 'cne_aws'
 
 cne = CneAws.new
+
+if ARGV[0].nil?
+  puts "Usage: cne [instances|security|unhealthy|elbs|terminate|stop|reboot]".colorize(:red)
+  exit 1
+end
 
 case ARGV[0]
   when 'instances'
@@ -19,6 +24,34 @@ case ARGV[0]
     else
       cne.list_security_groups(ARGV[1])
     end
+
   when 'unhealthy'
     cne.list_unhealthy_hosts
+
+  when 'elbs'
+    cne.display_all_elbs
+
+  when 'terminate'
+    if ARGV[1].nil?
+      puts "Usage: cne terminate [instance_id]".colorize(:red)
+      exit 1
+    else
+      cne.terminate_instance(ARGV[1])
+    end
+
+  when 'stop'
+    if ARGV[1].nil?
+      puts "Usage: cne stop [instance_id]".colorize(:red)
+      exit 1
+    else
+      cne.stop_instance(ARGV[1])
+    end
+
+  when 'reboot'
+    if ARGV[1].nil?
+      puts "Usage: cne reboot [instance_id]".colorize(:red)
+      exit 1
+    else
+      cne.reboot_instance(ARGV[1])
+    end
 end

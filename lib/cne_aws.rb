@@ -9,6 +9,12 @@ class CneAws
       access_key_id: ENV['AWS_ACCESS_KEY_ID'],
       secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
     )
+    @ec2 = Aws::EC2::Resource.new(
+      region: ENV['AWS_REGION'],
+      access_key_id: ENV['AWS_ACCESS_KEY_ID'],
+      secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
+    )
+
     @elb_client = Aws::ElasticLoadBalancing::Client.new(
       region: ENV['AWS_REGION'],
       access_key_id: ENV['AWS_ACCESS_KEY_ID'],
@@ -135,6 +141,31 @@ class CneAws
     return response.load_balancer_descriptions
   end
 
+  def display_all_elbs
+    output = []
+
+    get_elb_names.each do |elb|
+      output << [
+        "#{elb.scheme}".colorize(:green),
+        "#{elb.load_balancer_name}".colorize(:green),
+        "#{elb.dns_name}".colorize(:green),
+        "#{elb.instances.count}".colorize(:green)
+      ]
+    end
+
+    table = Terminal::Table.new(
+      :headings => [
+        'ELB Scheme'.colorize(:blue),
+        'ELB Name'.colorize(:blue),
+        'ELB DNS'.colorize(:blue),
+        'ELB Instance Count'.colorize(:blue)
+      ],
+      :rows => output.sort_by! { |name| [ name[0], name[1]] }
+    )
+
+    puts table
+  end
+
   def list_unhealthy_hosts
     unhealthy = []
 
@@ -171,6 +202,30 @@ class CneAws
 
     if unhealthy.empty?
       puts 'All systems go! All ELBs are healthy!'.colorize(:green)
+    end
+  end
+
+  def terminate_instance(instance_id)
+    if @ec2.instance(instance_id).exists?
+      puts "Terminating #{instance_id}...".colorize(:red)
+
+      @ec2.instance(instance_id).terminate
+    end
+  end
+
+  def reboot_instance(instance_id)
+    if @ec2.instance(instance_id).exists?
+      puts "Rebooting #{instance_id}...".colorize(:blue)
+
+      @ec2.instance(instance_id).reboot
+    end
+  end
+
+  def stop_instance(instance_id)
+    if @ec2.instance(instance_id).exists?
+      puts "Stopping #{instance_id}...".colorize(:red)
+
+      @ec2.instance(instance_id).stop
     end
   end
 end
