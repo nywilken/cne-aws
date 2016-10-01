@@ -2,7 +2,7 @@ require 'aws-sdk'
 require 'colorize'
 require 'terminal-table'
 
-class CneAws
+class CneEc2
   def initialize
     @ec2_client = Aws::EC2::Client.new(
       region: ENV['AWS_REGION'],
@@ -16,18 +16,6 @@ class CneAws
     )
 
     @elb_client = Aws::ElasticLoadBalancing::Client.new(
-      region: ENV['AWS_REGION'],
-      access_key_id: ENV['AWS_ACCESS_KEY_ID'],
-      secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
-    )
-
-    @cf = Aws::CloudFormation::Resource.new(
-      region: ENV['AWS_REGION'],
-      access_key_id: ENV['AWS_ACCESS_KEY_ID'],
-      secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
-    )
-
-    @cf_client = Aws::CloudFormation::Client.new(
       region: ENV['AWS_REGION'],
       access_key_id: ENV['AWS_ACCESS_KEY_ID'],
       secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
@@ -188,32 +176,32 @@ class CneAws
 
       response.instance_states.each do |instance|
         if instance.state.include?('OutOfService')
-          puts elb.load_balancer_name.colorize(:red)
-
           get_instance_info(instance.instance_id).each do |info|
             unhealthy << [
               "#{info.instances.first.instance_id}".colorize(:red),
               "#{info.instances.first.private_ip_address}".colorize(:red),
-              "#{instance.state}".colorize(:red)
+              "#{instance.state}".colorize(:red),
+              "#{elb.load_balancer_name}".colorize(:red)
             ]
           end
-
-          table = Terminal::Table.new(
-            :headings => [
-              'Instance ID'.colorize(:blue),
-              'IP'.colorize(:blue),
-              'Instance State'.colorize(:blue)
-            ],
-            :rows => unhealthy
-          )
-          puts table
-          puts ''
         end
       end
     end
 
     if unhealthy.empty?
       puts 'All systems go! All ELBs are healthy!'.colorize(:green)
+    else
+      table = Terminal::Table.new(
+        :headings => [
+          'Instance ID'.colorize(:blue),
+          'IP'.colorize(:blue),
+          'Instance State'.colorize(:blue),
+          'ELB'.colorize(:blue)
+        ],
+        :rows => unhealthy
+      )
+
+      puts table
     end
   end
 
@@ -239,52 +227,5 @@ class CneAws
 
       @ec2.instance(instance_id).stop
     end
-  end
-
-  def list_all_stacks
-    output = []
-
-    @cf.stacks.each do |stack|
-      output << [
-        "#{stack.stack_name}".to_s.colorize(:green),
-        "#{stack.stack_status}".colorize(:green),
-        "#{stack.last_updated_time}".colorize(:green)
-      ]
-    end
-
-    table = Terminal::Table.new(
-      :headings => [
-        'Stack Name'.colorize(:blue),
-        'Stack Status'.colorize(:blue),
-        'Stack Last Updated'.colorize(:blue)
-      ],
-      :rows => output.sort_by! { |name| name[0] }
-    )
-
-    puts table
-  end
-
-  def scale(cf_name, desired, max)
-    stack = Aws::CloudFormation::Stack.new(cf_name)
-    parameters = stack.parameters
-
-    parameters.each do |param|
-      if param['parameter_key'] == 'ScaleDesiredCapacity'
-        param['parameter_value'] = desired
-      elsif param['parameter_key'] == 'ScaleMin'
-        param['parameter_value'] = desired
-      elsif param['parameter_key'] == 'ScaleMax'
-        param['parameter_value'] = max
-      end
-    end
-
-    @cf_client.update_stack(
-      {
-        stack_name: cf_name,
-        use_previous_template: true,
-        capabilities: ["CAPABILITY_IAM"],
-        parameters: parameters
-      }
-    )
   end
 end

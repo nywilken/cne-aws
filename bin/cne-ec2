@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+
+require 'cne_ec2'
+
+cne_ec2 = CneEc2.new
+
+if ARGV[0].nil?
+  puts "Usage: cne-ec2 [commands]".colorize(:red)
+  puts "Commands: instances|security|unhealthy|elbs|terminate|stop|reboot".colorize(:red)
+  exit 1
+end
+
+case ARGV[0]
+  when 'instances'
+    if ARGV[1].nil? || ARGV[2].nil?
+      puts "Usage: cne instances [appname] [environment]".colorize(:red)
+      exit 1
+    else
+      cne_ec2.list_instances(ARGV[1], ARGV[2])
+    end
+
+  when 'security'
+    if ARGV[1].nil?
+      cne_ec2.list_security_groups('')
+    else
+      cne_ec2.list_security_groups(ARGV[1])
+    end
+
+  when 'unhealthy'
+    cne_ec2.list_unhealthy_hosts
+
+  when 'elbs'
+    cne_ec2.display_all_elbs
+
+  when 'terminate'
+    if ARGV[1].nil?
+      puts "Usage: cne terminate [instance_id]".colorize(:red)
+      exit 1
+    else
+      cne_ec2.terminate_instance(ARGV[1])
+    end
+
+  when 'stop'
+    if ARGV[1].nil?
+      puts "Usage: cne stop [instance_id]".colorize(:red)
+      exit 1
+    else
+      cne_ec2.stop_instance(ARGV[1])
+    end
+
+  when 'reboot'
+    if ARGV[1].nil?
+      puts "Usage: cne reboot [instance_id]".colorize(:red)
+      exit 1
+    else
+      cne_ec2.reboot_instance(ARGV[1])
+    end
+end
