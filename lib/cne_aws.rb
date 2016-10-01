@@ -2,7 +2,7 @@ require 'aws-sdk'
 require 'colorize'
 require 'terminal-table'
 
-class Cne
+class CneAws
   def initialize
     @ec2_client = Aws::EC2::Client.new(
       region: ENV['AWS_REGION'],
