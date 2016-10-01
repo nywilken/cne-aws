@@ -5,7 +5,7 @@ require 'cne_aws'
 cne = CneAws.new
 
 if ARGV[0].nil?
-  puts "Usage: cne [instances|security|unhealthy|elbs|terminate|stop|reboot]".colorize(:red)
+  puts "Usage: cne [instances|security|unhealthy|elbs|terminate|stop|reboot|list-stacks|scale]".colorize(:red)
   exit 1
 end
 
@@ -53,5 +53,16 @@ case ARGV[0]
       exit 1
     else
       cne.reboot_instance(ARGV[1])
+    end
+
+  when 'list-stacks'
+    cne.list_all_stacks
+
+  when 'scale'
+    if ARGV[1].nil? || ARGV[2].nil? || ARGV[3].nil?
+      puts "Usage: cne scale-up [stackname] [desired_capacity] [max_capacity]".colorize(:red)
+      exit 1
+    else
+      cne.scale(ARGV[1], ARGV[2], ARGV[3])
     end
 end
