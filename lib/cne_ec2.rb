@@ -4,6 +4,7 @@ require 'terminal-table'
 
 class CneEc2
   def initialize
+    # PR: Breakout credentials
     @ec2_client = Aws::EC2::Client.new(
       region: ENV['AWS_REGION'],
       access_key_id: ENV['AWS_ACCESS_KEY_ID'],
@@ -48,6 +49,7 @@ class CneEc2
     puts "Displaying #{appname} (#{env}) instances:".colorize(:red)
 
     response.reservations.each do |reserve|
+      # PR, replace with a collect statement
       reserve.instances.each do |instance|
         output <<  [
           "#{instance.private_ip_address}".colorize(:green),
@@ -60,6 +62,7 @@ class CneEc2
       end
     end
 
+    # PR, move table building out to function for testing
     table = Terminal::Table.new(
       :headings => [
         'IP'.colorize(:blue),
